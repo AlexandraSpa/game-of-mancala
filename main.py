@@ -72,6 +72,7 @@ class Player:
         self.holes = holes_list
         self.available_holes = []
         self.final_hole = final_hole
+        self.gem_holes = []
 
     def collect_gems(self):
         gems = self.final_hole.count_gems()
@@ -86,9 +87,15 @@ class Player:
                 return False
         return True
 
+    def update_gem_holes(self):
+        self.gem_holes.clear()
+        for hole in self.holes:
+            if not hole.is_empty():
+                self.gem_holes.append(hole)
+
 
 class Game:
-    def __init__(self):
+    def __init__(self, game_mode):
         pygame.init()
         self.running, self.playing = True, False
         self.DISPLAY_X, self.DISPLAY_Y = 1000, 628
@@ -103,10 +110,15 @@ class Game:
         self.current_player = self.player1
         self.current_hole = self.player1.holes[0]
         self.font = pygame.font.Font(pygame.font.get_default_font(), 30)
+        self.game_mode = game_mode
 
     def game_loop(self):
-        while self.playing:
-            self.check_events()
+        if self.game_mode == "player vs. player":
+            while self.playing:
+                self.check_events()
+        if self.game_mode == "computer vs. player":
+            while self.playing:
+                self.computer_check_events()
 
     def check_events(self):
         for event in pygame.event.get():
@@ -139,6 +151,48 @@ class Game:
         self.display_number_of_gems()
         pygame.display.update()
 
+    def computer_check_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running, self.playing = False, False
+            if self.current_player == self.player2:
+                self.computer_make_the_move()
+                if self.game_is_over():
+                    if self.player1.collect_gems() > self.player2.collect_gems():
+                        print("Player one won!")
+                    elif self.player1.collect_gems() < self.player2.collect_gems():
+                        print("Player two won!")
+                    else:
+                        print("Equality!")
+                    print("Player1 " + str(self.player1.collect_gems()) + " - " +
+                          str(self.player2.collect_gems()) + " Player2 ")
+                    self.running, self.playing = False, False
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.hole_clicked() and not self.current_hole.is_empty():
+
+                    # gem_container = Gem(DEFAULT_GEM_IMAGE)
+                    # gem_container.image = hole1.pop_gem().image
+                    # hole2.add_gem(gem_container)
+                    # hole1.pop_gem().remove(hole1.gems)
+                    self.make_the_move()
+                    if self.game_is_over():
+                        if self.player1.collect_gems() > self.player2.collect_gems():
+                            print("Player one won!")
+                        elif self.player1.collect_gems() < self.player2.collect_gems():
+                            print("Computer won!")
+                        else:
+                            print("Equality!")
+                        print("Player1 " + str(self.player1.collect_gems()) + " - " +
+                              str(self.player2.collect_gems()) + " Computer ")
+                        self.running, self.playing = False, False
+        pygame.display.flip()
+        self.display.blit(self.background, (0, 0))
+        # pygame.draw.rect(self.display, (0, 0, 0), last_hole1)
+        # pygame.draw.rect(self.display, (0, 0, 0), last_hole2)
+        self.board.draw_gems(self.display)
+        self.display_number_of_gems()
+        pygame.display.update()
+
     def hole_clicked(self):
         for hole in self.current_player.holes:
             if hole.rect.collidepoint(pygame.mouse.get_pos()):
@@ -148,7 +202,7 @@ class Game:
 
     def make_the_move(self):
         current_index = self.current_player.available_holes.index(self.current_hole)
-        print(current_index)
+        # print(current_index)
         for gem in self.current_hole.gems:
             gem.rect.y -= 60
         while not self.current_hole.is_empty():
@@ -163,7 +217,40 @@ class Game:
         # print(current_index)
         if last_hole.count_gems() == 1 and 0 <= current_index <= 5 \
                 and not self.current_player.available_holes[12 - current_index].is_empty():
-            print("empty hole found!")
+            # print("empty hole found!")
+            self.current_player.final_hole.add_gems(last_hole.gems)
+            last_hole.remove_gems()
+            self.current_player.final_hole.add_gems(self.current_player.available_holes[12 - current_index].gems)
+            self.current_player.available_holes[12 - current_index].remove_gems()
+        if last_hole != self.current_player.final_hole:
+            self.switch_turns()
+
+    def computer_make_the_move(self):
+        self.player2.update_gem_holes()
+        if len(self.player2.gem_holes) == 1:
+            self.current_hole = self.player2.gem_holes[0]
+            current_index = self.current_player.available_holes.index(self.current_hole)
+        else:
+            current_index = random.randrange(0, self.player2.gem_holes.__len__() - 1)
+            while self.current_player.available_holes[current_index].is_empty():
+                current_index = random.randrange(0, 5)
+            # print(current_index)
+            self.current_hole = self.current_player.available_holes[current_index]
+        for gem in self.current_hole.gems:
+            gem.rect.y -= 60
+        while not self.current_hole.is_empty():
+            while current_index + 1 > 12:
+                current_index -= 13
+            gem_container = Gem(DEFAULT_GEM_IMAGE)
+            gem_container.image = self.current_hole.pop_gem().image
+            self.current_player.available_holes[current_index + 1].add_gem(gem_container)
+            self.current_hole.pop_gem().remove(self.current_hole.gems)
+            current_index += 1
+        last_hole = self.current_player.available_holes[current_index]
+        # print(current_index)
+        if last_hole.count_gems() == 1 and 0 <= current_index <= 5 \
+                and not self.current_player.available_holes[12 - current_index].is_empty():
+            # print("empty hole found!")
             self.current_player.final_hole.add_gems(last_hole.gems)
             last_hole.remove_gems()
             self.current_player.final_hole.add_gems(self.current_player.available_holes[12 - current_index].gems)
@@ -232,6 +319,8 @@ if __name__ == '__main__':
     hole11.add_gems([Gem("05.png"), Gem("06.png"), Gem("07.png"), Gem("08.png")])
     hole12.add_gems([Gem("05.png"), Gem("06.png"), Gem("07.png"), Gem("08.png")])
 
-    game = Game()
+    # "player vs. player"
+    # "computer vs. player"
+    game = Game("computer vs. player")
     game.playing = True
     game.game_loop()
