@@ -111,6 +111,7 @@ class Game:
         self.current_hole = self.player1.holes[0]
         self.font = pygame.font.Font(pygame.font.get_default_font(), 30)
         self.game_mode = game_mode
+        self.end_message = None
 
     def game_loop(self):
         if self.game_mode == "player vs. player":
@@ -134,14 +135,11 @@ class Game:
                     self.make_the_move()
                     if self.game_is_over():
                         if self.player1.collect_gems() > self.player2.collect_gems():
-                            print("Player one won!")
+                            self.end_message = self.font.render("Player one won!", True, (0, 0, 0))
                         elif self.player1.collect_gems() < self.player2.collect_gems():
-                            print("Player two won!")
+                            self.end_message = self.font.render("Player two won!", True, (0, 0, 0))
                         else:
-                            print("Equality!")
-                        print("Player1 " + str(self.player1.collect_gems()) + " - " +
-                              str(self.player2.collect_gems()) + " Player2 ")
-                        self.running, self.playing = False, False
+                            self.end_message = self.font.render("Equality!", True, (0, 0, 0))
 
         pygame.display.flip()
         self.display.blit(self.background, (0, 0))
@@ -149,6 +147,8 @@ class Game:
         # pygame.draw.rect(self.display, (0, 0, 0), last_hole2)
         self.board.draw_gems(self.display)
         self.display_number_of_gems()
+        if self.end_message:
+            self.display.blit(self.end_message, (self.DISPLAY_X / 2 - 100, self.DISPLAY_Y - 100))
         pygame.display.update()
 
     def computer_check_events(self):
@@ -159,14 +159,12 @@ class Game:
                 self.computer_make_the_move()
                 if self.game_is_over():
                     if self.player1.collect_gems() > self.player2.collect_gems():
-                        print("Player one won!")
+                        self.end_message = self.font.render("Player one won!", True, (0, 0, 0))
                     elif self.player1.collect_gems() < self.player2.collect_gems():
-                        print("Player two won!")
+                        self.end_message = self.font.render("Player one won!", True, (0, 0, 0))
                     else:
-                        print("Equality!")
-                    print("Player1 " + str(self.player1.collect_gems()) + " - " +
-                          str(self.player2.collect_gems()) + " Player2 ")
-                    self.running, self.playing = False, False
+                        self.end_message = self.font.render("Player one won!", True, (0, 0, 0))
+                    # self.running, self.playing = False, False
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if self.hole_clicked() and not self.current_hole.is_empty():
 
@@ -177,20 +175,25 @@ class Game:
                     self.make_the_move()
                     if self.game_is_over():
                         if self.player1.collect_gems() > self.player2.collect_gems():
-                            print("Player one won!")
+                            # print("Player one won!")
+                            self.end_message = self.font.render("Player one won!", True, (0, 0, 0))
                         elif self.player1.collect_gems() < self.player2.collect_gems():
-                            print("Computer won!")
+                            # print("Computer won!")
+                            self.end_message = self.font.render("Computer won!", True, (0, 0, 0))
                         else:
-                            print("Equality!")
-                        print("Player1 " + str(self.player1.collect_gems()) + " - " +
-                              str(self.player2.collect_gems()) + " Computer ")
-                        self.running, self.playing = False, False
+                            # print("Equality!")
+                            self.end_message = self.font.render("Equality!", True, (0, 0, 0))
+                        # print("Player1 " + str(self.player1.collect_gems()) + " - " +
+                        #      str(self.player2.collect_gems()) + " Computer ")
+
         pygame.display.flip()
         self.display.blit(self.background, (0, 0))
         # pygame.draw.rect(self.display, (0, 0, 0), last_hole1)
         # pygame.draw.rect(self.display, (0, 0, 0), last_hole2)
         self.board.draw_gems(self.display)
         self.display_number_of_gems()
+        if self.end_message:
+            self.display.blit(self.end_message, (self.DISPLAY_X / 2 - 100, self.DISPLAY_Y - 100))
         pygame.display.update()
 
     def hole_clicked(self):
@@ -321,6 +324,11 @@ if __name__ == '__main__':
 
     # "player vs. player"
     # "computer vs. player"
+    # game_mood = input("Type your game mode: ")
+    # if game_mood == '1':
+    #    game_mood = "player vs. player"
+    # if game_mood == '2':
+    #    game_mood = "computer vs. player"
     game = Game("computer vs. player")
     game.playing = True
     game.game_loop()
